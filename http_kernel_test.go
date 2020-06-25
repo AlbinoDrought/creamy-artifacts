@@ -41,6 +41,12 @@ func assertStatus(t *testing.T, resp *http.Response, expectedStatus int, action 
 	}
 }
 
+func assertContentLength(t *testing.T, resp *http.Response, expectedLength int64, action string) {
+	if resp.ContentLength != expectedLength {
+		t.Errorf("expected length of %v after %v but received length of %v", expectedLength, action, resp.ContentLength)
+	}
+}
+
 func assertBody(t *testing.T, resp *http.Response, expectedBody []byte, action string) {
 	actualBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -89,31 +95,37 @@ func TestWriteReadCollateDelete(t *testing.T) {
 		// read #1
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts/v1.2.0", nil))
 		assertStatus(t, resp, http.StatusOK, "successful read #1")
+		assertContentLength(t, resp, int64(len(firstArtifact)), "successful read #1")
 		assertBody(t, resp, []byte(firstArtifact), "successful read #1")
 
 		// read #2
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts/v1.3.0", nil))
 		assertStatus(t, resp, http.StatusOK, "successful read #2")
+		assertContentLength(t, resp, int64(len(secondArtifact)), "successful read #2")
 		assertBody(t, resp, []byte(secondArtifact), "successful read #2")
 
 		// read #3
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts/v1.3.1", nil))
 		assertStatus(t, resp, http.StatusOK, "successful read #3")
+		assertContentLength(t, resp, int64(len(thirdArtifact)), "successful read #3")
 		assertBody(t, resp, []byte(thirdArtifact), "successful read #3")
 
 		// collation #1: 1, single things are ok
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/collation?artifacts=v1.2.0", nil))
 		assertStatus(t, resp, http.StatusOK, "successful collation #1")
+		assertContentLength(t, resp, int64(len(firstArtifact)), "successful collation #1")
 		assertBody(t, resp, []byte(firstArtifact), "successful collation #1")
 
 		// collation #2: 1+2+3, multiple things are ok
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/collation?artifacts=v1.2.0,v1.3.0,v1.3.1", nil))
 		assertStatus(t, resp, http.StatusOK, "successful collation #2")
+		assertContentLength(t, resp, int64(len(firstArtifact)+len(secondArtifact)+len(thirdArtifact)), "successful collation #2")
 		assertBody(t, resp, append([]byte(firstArtifact), append([]byte(secondArtifact), []byte(thirdArtifact)...)...), "successful collation #2")
 
 		// collation #3: 3+1+2, order is important
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/collation?artifacts=v1.3.1,v1.2.0,v1.3.0", nil))
 		assertStatus(t, resp, http.StatusOK, "successful collation #3")
+		assertContentLength(t, resp, int64(len(firstArtifact)+len(secondArtifact)+len(thirdArtifact)), "successful collation #3")
 		assertBody(t, resp, append([]byte(thirdArtifact), append([]byte(firstArtifact), []byte(secondArtifact)...)...), "successful collation #3")
 
 		// delete #1
