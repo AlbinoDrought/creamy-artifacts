@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
@@ -59,6 +60,7 @@ func (kernel *httpKernel) listArtifacts(w http.ResponseWriter, r *http.Request, 
 	if err != nil {
 		return err
 	}
+	sort.Strings(artifactKeys)
 	return json.NewEncoder(w).Encode(artifactKeys)
 }
 
