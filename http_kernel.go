@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
@@ -52,7 +53,15 @@ func (kernel *httpKernel) collateArtifacts(w http.ResponseWriter, r *http.Reques
 		w.WriteHeader(http.StatusBadRequest)
 		return nil
 	}
-	return kernel.project.CollateArtifacts(strings.Split(rawArtifactsValue, ","), w)
+	artifacts := strings.Split(rawArtifactsValue, ",")
+
+	size, err := kernel.project.MeasureArtifacts(artifacts)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+
+	return kernel.project.CollateArtifacts(artifacts, w)
 }
 
 func (kernel *httpKernel) listArtifacts(w http.ResponseWriter, r *http.Request, ps httprouter.Params) error {
@@ -65,8 +74,15 @@ func (kernel *httpKernel) listArtifacts(w http.ResponseWriter, r *http.Request, 
 }
 
 func (kernel *httpKernel) showArtifact(w http.ResponseWriter, r *http.Request, ps httprouter.Params) error {
-	key := ps.ByName("artifact")
-	if err := kernel.project.CollateArtifacts([]string{key}, w); err != nil {
+	artifacts := []string{ps.ByName("artifact")}
+
+	size, err := kernel.project.MeasureArtifacts(artifacts)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+
+	if err = kernel.project.CollateArtifacts(artifacts, w); err != nil {
 		return err
 	}
 	return nil

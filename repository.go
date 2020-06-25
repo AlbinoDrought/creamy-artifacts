@@ -9,6 +9,7 @@ import (
 type ArtifactRepository interface {
 	List() ([]string, error)
 	Store(key string, reader io.Reader) error
+	Length(key string) (int64, error)
 	Pull(key string, writer io.Writer) error
 	Remove(key string) error
 }
@@ -45,6 +46,21 @@ func (repository *localArtifactRepository) Store(key string, reader io.Reader) e
 	return err
 }
 
+func (repository *localArtifactRepository) Length(key string) (int64, error) {
+	file, err := os.OpenFile(repository.localPath(key), os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return 0, err
+	}
+
+	size := int64(0)
+	info, err := file.Stat()
+	if err1 := file.Close(); err == nil {
+		size = info.Size()
+		err = err1
+	}
+	return size, err
+}
+
 func (repository *localArtifactRepository) Pull(key string, writer io.Writer) error {
 	file, err := os.OpenFile(repository.localPath(key), os.O_RDONLY, os.ModePerm)
 	if err != nil {
@@ -71,6 +87,18 @@ func (project *Project) ListArtifacts() ([]string, error) {
 
 func (project *Project) StoreArtifact(key string, reader io.Reader) error {
 	return project.artifactRepository.Store(key, reader)
+}
+
+func (project *Project) MeasureArtifacts(keys []string) (int64, error) {
+	size := int64(0)
+	for _, key := range keys {
+		artifactSize, err := project.artifactRepository.Length(key)
+		if err != nil {
+			return 0, err
+		}
+		size += artifactSize
+	}
+	return size, nil
 }
 
 func (project *Project) CollateArtifacts(keys []string, writer io.Writer) error {
