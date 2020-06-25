@@ -47,7 +47,7 @@ func assertBody(t *testing.T, resp *http.Response, expectedBody []byte, action s
 		t.Errorf("unexpected error when reading body after %v", action)
 	}
 	if bytes.Compare(expectedBody, actualBody) != 0 {
-		t.Errorf("expected body of %v after %v but received %v", expectedBody, action, actualBody)
+		t.Errorf("expected body of %v after %v but received %v (\"%v\" vs \"%v\")", expectedBody, action, actualBody, string(expectedBody), string(actualBody))
 	}
 }
 
@@ -63,13 +63,28 @@ func TestWriteReadCollateDelete(t *testing.T) {
 		resp = send(httptest.NewRequest("PUT", "http://artifacts.localhost/artifacts/v1.2.0", strings.NewReader(firstArtifact)))
 		assertStatus(t, resp, http.StatusNoContent, "successful write #1")
 
+		// list #1
+		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts", nil))
+		assertStatus(t, resp, http.StatusOK, "successful list #1")
+		assertBody(t, resp, []byte("[\"v1.2.0\"]\n"), "successful list #1")
+
 		// write #2
 		resp = send(httptest.NewRequest("PUT", "http://artifacts.localhost/artifacts/v1.3.0", strings.NewReader(secondArtifact)))
 		assertStatus(t, resp, http.StatusNoContent, "successful write #2")
 
+		// list #2
+		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts", nil))
+		assertStatus(t, resp, http.StatusOK, "successful list #2")
+		assertBody(t, resp, []byte("[\"v1.2.0\",\"v1.3.0\"]\n"), "successful list #2")
+
 		// write #3
 		resp = send(httptest.NewRequest("PUT", "http://artifacts.localhost/artifacts/v1.3.1", strings.NewReader(thirdArtifact)))
 		assertStatus(t, resp, http.StatusNoContent, "successful write #3")
+
+		// list #3
+		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts", nil))
+		assertStatus(t, resp, http.StatusOK, "successful list #3")
+		assertBody(t, resp, []byte("[\"v1.2.0\",\"v1.3.0\",\"v1.3.1\"]\n"), "successful list #2")
 
 		// read #1
 		resp = send(httptest.NewRequest("GET", "http://artifacts.localhost/artifacts/v1.2.0", nil))
