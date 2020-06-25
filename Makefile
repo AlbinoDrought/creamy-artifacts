@@ -9,6 +9,10 @@ deps:
 build: deps
 	go build
 
+.PHONY: test
+test: deps
+	go test
+
 .PHONY: run
 run: build
 	./creamy-artifacts
