@@ -27,6 +27,8 @@ uninstall:
 
 .PHONY: clean
 clean:
+	rm -f example/*.tar
+	rm -rf example/example-collations
 	go clean -x
 
 .PHONY: image

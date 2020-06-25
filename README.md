@@ -11,6 +11,8 @@ Store and merge build artifacts.
 
 Right now there are no configuration options.
 
+See [example/run.sh](./example/run.sh) for HTTP usage.
+
 ### With Docker
 
 ```sh
